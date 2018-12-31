@@ -3,6 +3,7 @@
 import os
 import sys
 
+import json
 import shutil
 import argparse
 
@@ -12,18 +13,45 @@ def processFile(input, config, args):
     process the document.
     """
 
+    print(input)
+    print(config)
+    print(args)
+    return
+
+def loadConfig(path):
+    """
+    Load a JSON document containing configuration data.
+    Existance of file should already have been checked
+    """
+    with open(path) as f:
+        data = json.load(f)
+    return data
 
 def processInput(input, args):
     """
     Given an input path and the standard argument object, load the relevant config
     file and then process each input file.
     """
-    print(input, args)
+
+    if not os.path.isdir(input):
+        print("Error: No such folder [%s]\n" % (input))
+        return None
 
     # Load a config file
-
+    if os.path.isfile(input + os.sep + "config.json"):
+        config = loadConfig(input + os.sep + "config.json")
+    elif 'config' in args and os.path.isfile(args['config']):
+        config = loadConfig(args['config'])
+    else:
+        print("Warning: Can\'t find a config for [%s]\n" % (input))
+        config = {}
+    
     # Find and process each PDF file
-
+    for path, dirs, files in os.walk(input):
+        print(path)
+        for f in files:
+            if f.endswith(".pdf"):
+                processFile(os.path.join(path,f), config, args)
 
 if __name__ == "__main__":
     # Locate default config file
@@ -58,6 +86,6 @@ if __name__ == "__main__":
         exit(1)
 
     for i in args.input:
-        processInput(i, args)
+        processInput(i, vars(args))
 
 # End
