@@ -6,6 +6,47 @@ import sys
 import json
 import shutil
 import argparse
+import re
+
+from pprint import pprint
+
+from subprocess import call
+
+def dayToInt(d):
+    return int(d)
+
+def monthToInt(m):
+    months = {
+        "jan": 1,
+        "feb": 2,
+        "mar": 3,
+        "apr": 4,
+        "may": 5,
+        "jun": 6,
+        "jul": 7,
+        "aug": 8,
+        "sep": 9,
+        "oct": 10,
+        "0ct": 10,
+        "nov": 11,
+        "dec": 12
+    }
+
+    k = m[:3].lower()
+
+    if k in months:
+        return months[k]
+    return None
+
+def yearToInt(y):
+    y = int(y)
+
+    if y < 70:
+        y = 2000 + y
+    if y < 100:
+        y = 1900 + y
+
+    return y
 
 def processFile(input, config, args):
     """
@@ -14,9 +55,79 @@ def processFile(input, config, args):
     """
 
     print(input)
-    print(config)
-    print(args)
+    #print(config)
+    #print(args)
+
+    filebase, _ = os.path.splitext(input)
+
+    txtFile = filebase + ".txt"
+
+    call([args['p2t'], "-layout", "-nopgbrk", input, txtFile])
+
+    with open(txtFile,'r') as f:
+        s = f.read()
+
+    # Date first
+    # Various formats, which will undoubedly need adding to later
+
+    md = None
+    date = ""
+
+    mdt = re.search(r'(([1-3]?[0-9])((th)|(nd)|(rd)|(st))?) *'
+                     '((January)|(Febuary)|(March)|(April)|(May)|(June)|(July)|(August)|(September)|((O|0)ctober)|(November)|(December)) *'
+                     '((20|19)[0-9][0-9])', s, re.IGNORECASE)
+
+    if mdt is not None:
+        if (md is None) or (mdt.start() < md.start()):
+            md = mdt
+            date = "%04d-%02d-%02d" % (yearToInt(md.group(22)), monthToInt(md.group(8)), dayToInt(md.group(2)))
+
+    mdt = re.search(r'(([1-3]?[0-9])((th)|(nd)|(rd)|(st))?) *'
+                     '((Jan)|(Feb)|(Mar)|(Apr)|(May)|(Jun)|(Jul)|(Aug)|(Sep)|((O|0)ct)|(Nov)|(Dec)) *'
+                     '((20|19)?[0-9][0-9])', s, re.IGNORECASE)
+
+    if mdt is not None:
+        if (md is None) or (mdt.start() < md.start()):
+            md = mdt
+            date = "%04d-%02d-%02d" % (yearToInt(md.group(22)), monthToInt(md.group(8)), dayToInt(md.group(2)))
+
+    print(date)
+
+    # Company second
+    # Then account number third
+
+    if 'companiesRegexp' in config:
+
+        m = re.search(config['companiesRegexp'], s, re.IGNORECASE)
+
+        if m is not None:
+            company = config['companiesMatch'][m.group(0).lower()]
+        else:
+            company = ""
+    else:
+        company = ""
+
+    print(company)
+
     return
+
+def expandCompanies(data):
+    if 'companies' in data:
+        l = []
+        data['companiesMatch'] = {}
+
+        for c in data['companies']:
+            l.append("(" + c['name'] + ")")
+            data['companiesMatch'][c['name'].lower()] = c['name']
+            if 'aliases' in c:
+                for a in c['aliases']:
+                    data['companiesMatch'][a.lower()] = c['name']
+                    l.append("(" + a + ")")
+
+        r = "(" + "|".join(l) + ")"
+        data['companiesRegexp'] = r
+
+    return data
 
 def loadConfig(path):
     """
@@ -25,6 +136,8 @@ def loadConfig(path):
     """
     with open(path) as f:
         data = json.load(f)
+
+    data = expandCompanies(data)
     return data
 
 def processInput(input, args):
@@ -47,7 +160,7 @@ def processInput(input, args):
         config = {}
     
     # Find and process each PDF file
-    for path, dirs, files in os.walk(input):
+    for path, _, files in os.walk(input):
         print(path)
         for f in files:
             if f.endswith(".pdf"):
