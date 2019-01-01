@@ -105,7 +105,6 @@ def processFile(input, config, args):
 
                 for a in c['accounts']:
                     for n in c['accounts'][a]:
-                        print(a, n)
                         m = re.search(n, s, re.IGNORECASE)
                         if m is not None:
                                 account = a
@@ -117,7 +116,32 @@ def processFile(input, config, args):
         company = ""
         account = ""
 
-    print("%s -> %s/%s/%s.pdf\n" % (input, company, account, date))
+    if 'output' in args and args['output'] is not None:
+        # Make the directories
+        p = args['output']
+        if not company == "":
+            p = os.path.join(p, company)
+            os.mkdir(p)
+        if not account == "":
+            p = os.path.join(p, account)
+            os.mkdir(p)
+
+        # Then pick a suffix to avoid overwrites
+        suffix = 1
+        filename = ""
+        while True:
+            filename = os.path.join(p, "%s-%04d.pdf" % (date, suffix))
+            if not os.path.exists(filename):
+                break
+            suffix = suffix + 1
+        
+        # And we are done
+        os.rename(input, filename)
+        
+    else:
+        print("Would move %s -> <output>/%s/%s/%s-%04d.pdf" % (input, company, account, date, 1))
+
+    os.remove(txtFile)
 
     return
 
