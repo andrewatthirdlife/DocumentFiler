@@ -27,7 +27,7 @@ def monthToInt(m):
         "aug": 8,
         "sep": 9,
         "oct": 10,
-        "0ct": 10,
+        "0ct": 10, # OCR error
         "nov": 11,
         "dec": 12
     }
@@ -53,11 +53,6 @@ def processFile(input, config, args):
     Given an input PDF document, the configuration information and the standard argument object,
     process the document.
     """
-
-    print(input)
-    #print(config)
-    #print(args)
-
     filebase, _ = os.path.splitext(input)
 
     txtFile = filebase + ".txt"
@@ -91,8 +86,6 @@ def processFile(input, config, args):
             md = mdt
             date = "%04d-%02d-%02d" % (yearToInt(md.group(22)), monthToInt(md.group(8)), dayToInt(md.group(2)))
 
-    print(date)
-
     # Company second
     # Then account number third
 
@@ -102,12 +95,29 @@ def processFile(input, config, args):
 
         if m is not None:
             company = config['companiesMatch'][m.group(0).lower()]
+
+            c = config['companies'][company]
+
+            account = ""
+            if 'accounts' in c:
+                l = []
+                m = {}
+
+                for a in c['accounts']:
+                    for n in c['accounts'][a]:
+                        print(a, n)
+                        m = re.search(n, s, re.IGNORECASE)
+                        if m is not None:
+                                account = a
+                            
         else:
-            company = ""
+            company = "Unknown"
+            account = ""
     else:
         company = ""
+        account = ""
 
-    print(company)
+    print("%s -> %s/%s/%s.pdf\n" % (input, company, account, date))
 
     return
 
@@ -116,12 +126,12 @@ def expandCompanies(data):
         l = []
         data['companiesMatch'] = {}
 
-        for c in data['companies']:
-            l.append("(" + c['name'] + ")")
-            data['companiesMatch'][c['name'].lower()] = c['name']
-            if 'aliases' in c:
-                for a in c['aliases']:
-                    data['companiesMatch'][a.lower()] = c['name']
+        for n in data['companies']:
+            l.append("(" + n + ")")
+            data['companiesMatch'][n.lower()] = n
+            if 'aliases' in data['companies'][n]:
+                for a in data['companies'][n]['aliases']:
+                    data['companiesMatch'][a.lower()] = n
                     l.append("(" + a + ")")
 
         r = "(" + "|".join(l) + ")"
