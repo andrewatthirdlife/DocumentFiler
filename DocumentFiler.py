@@ -68,8 +68,8 @@ def processFile(input, config, args):
     md = None
     date = ""
 
-    mdt = re.search(r'(([1-3]?[0-9])((th)|(nd)|(rd)|(st))?) *'
-                     '((January)|(Febuary)|(March)|(April)|(May)|(June)|(July)|(August)|(September)|((O|0)ctober)|(November)|(December)) *'
+    mdt = re.search(r'(([1-3]?[0-9])((th)|(nd)|(rd)|(st))?)[ -/]*'
+                     '((January)|(Febuary)|(March)|(April)|(May)|(June)|(July)|(August)|(September)|((O|0)ctober)|(November)|(December))[ -/]*'
                      '((20|19)[0-9][0-9])', s, re.IGNORECASE)
 
     if mdt is not None:
@@ -77,14 +77,28 @@ def processFile(input, config, args):
             md = mdt
             date = "%04d-%02d-%02d" % (yearToInt(md.group(22)), monthToInt(md.group(8)), dayToInt(md.group(2)))
 
-    mdt = re.search(r'(([1-3]?[0-9])((th)|(nd)|(rd)|(st))?) *'
-                     '((Jan)|(Feb)|(Mar)|(Apr)|(May)|(Jun)|(Jul)|(Aug)|(Sep)|((O|0)ct)|(Nov)|(Dec)) *'
+    mdt = re.search(r'(([1-3]?[0-9])((th)|(nd)|(rd)|(st))?)[ -/]*'
+                     '((Jan)|(Feb)|(Mar)|(Apr)|(May)|(Jun)|(Jul)|(Aug)|(Sep)|((O|0)ct)|(Nov)|(Dec))[ -/]*'
                      '((20|19)?[0-9][0-9])', s, re.IGNORECASE)
 
     if mdt is not None:
         if (md is None) or (mdt.start() < md.start()):
             md = mdt
             date = "%04d-%02d-%02d" % (yearToInt(md.group(22)), monthToInt(md.group(8)), dayToInt(md.group(2)))
+
+    mdt = re.search(r'([0-3]?[0-9])/([0-1]?[0-9])/(((19[6789])|(20[012]))[0-9])'
+                    , s, re.IGNORECASE)
+
+    if mdt is not None:
+        print(mdt)
+        print(mdt.groups())
+        if (md is None) or (mdt.start() < md.start()):
+            md = mdt
+            date = "%04d-%02d-%02d" % (int(md.group(3)), int(md.group(2)), dayToInt(md.group(1)))
+
+    if date == "":
+        print("Warning: Unable to process file [%s], leaving text file for reference" % (input))
+        return None
 
     # Company second
     # Then account number third
