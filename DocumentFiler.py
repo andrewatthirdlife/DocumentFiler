@@ -135,10 +135,12 @@ def processFile(input, config, args):
         p = args['output']
         if not company == "":
             p = os.path.join(p, company)
-            os.mkdir(p)
+            if not os.path.exists(p):
+                os.mkdir(p)
         if not account == "":
             p = os.path.join(p, account)
-            os.mkdir(p)
+            if not os.path.exists(p):
+                os.mkdir(p)
 
         # Then pick a suffix to avoid overwrites
         suffix = 1
@@ -150,7 +152,7 @@ def processFile(input, config, args):
             suffix = suffix + 1
         
         # And we are done
-        os.rename(input, filename)
+        shutil.move(input, filename)
         
     else:
         print("Would move %s -> <output>/%s/%s/%s-%04d.pdf" % (input, company, account, date, 1))
