@@ -69,7 +69,7 @@ def processFile(input, config, args):
     date = ""
 
     mdt = re.search(r'(([1-3]?[0-9])((th)|(nd)|(rd)|(st))?)[ -/]*'
-                     '((January)|(Febuary)|(March)|(April)|(May)|(June)|(July)|(August)|(September)|((O|0)ctober)|(November)|(December))[ -/]*'
+                     '((January)|(February)|(March)|(April)|(May)|(June)|(July)|(August)|(September)|((O|0)ctober)|(November)|(December))[ -/]*'
                      '((20|19)[0-9][0-9])', s, re.IGNORECASE)
 
     if mdt is not None:
@@ -90,8 +90,6 @@ def processFile(input, config, args):
                     , s, re.IGNORECASE)
 
     if mdt is not None:
-        print(mdt)
-        print(mdt.groups())
         if (md is None) or (mdt.start() < md.start()):
             md = mdt
             date = "%04d-%02d-%02d" % (int(md.group(3)), int(md.group(2)), dayToInt(md.group(1)))
